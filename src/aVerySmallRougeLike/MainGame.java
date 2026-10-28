@@ -12,9 +12,29 @@ import java.util.Random;
 
 //DonSubb
 //Oct 28 2026
+
+//Todo
+//Create spritesheet for the other two character
+//Add spritesheet into the code
+//Add more enemy's
+//Create spritsheet for all enemy's
+//Add spritesheet into the code
+//Make UI for the main menu
+//Make UI for the character select 
+//Make icons for each character and add them to the UI
+//Change the in game layout(infnite play area)
+//Add all new cards and effects(replace the old ones)
+//Add Journal with all cards 
+//Add chest spawning
+//Add items for the chest
+//Add hotbar for items gained
+//Add item effects
+
 public class MainGame extends JPanel implements ActionListener, KeyListener, MouseListener {
     
-    // Game States
+    private static final long serialVersionUID = 1L;
+
+	// Game States
     enum GameState { MENU, CHAR_SELECT, PLAYING, LEVEL_UP, GAME_OVER }
     private GameState currentState = GameState.MENU;
 
@@ -38,7 +58,6 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
     // Wave / Spawn logic
     private int frameCount = 0;
     private int spawnRate = 120;
-    private int waveNumber = 1;
     private int enemiesKilledThisWave = 0;
     private int enemiesTotalThisWave = 20;
 
@@ -235,7 +254,6 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
                 
                 enemiesKilledThisWave++;
                 if (enemiesKilledThisWave >= enemiesTotalThisWave) {
-                    waveNumber++;
                     enemiesTotalThisWave += 10; 
                     enemiesKilledThisWave = 0;
                 }
@@ -558,7 +576,6 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         projectiles.clear();
         frameCount = 0;
         spawnRate = 120;
-        waveNumber = 1;
         enemiesKilledThisWave = 0;
         enemiesTotalThisWave = 20;
         currentState = GameState.PLAYING;
