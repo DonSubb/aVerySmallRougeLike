@@ -14,8 +14,6 @@ import java.util.Random;
 //Oct 28 2026
 
 //Todo
-//Create spritesheet for the other two character
-//Add spritesheet into the code
 //Add more enemy's
 //Create spritsheet for all enemy's
 //Add spritesheet into the code
@@ -29,6 +27,10 @@ import java.util.Random;
 //Add items for the chest
 //Add hotbar for items gained
 //Add item effects
+
+//To Fix
+//Green bar in the ui is to far to the left
+//Fix the drictions the character faces for both the warizard & Swordsman
 
 public class MainGame extends JPanel implements ActionListener, KeyListener, MouseListener {
     
@@ -74,6 +76,8 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
 
     // Archer Spritesheet
     private BufferedImage[][] archerSprites;
+    private BufferedImage[][] wizardSprites;
+    private BufferedImage[][] swordsmanSprites;
 
     public MainGame() {
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
@@ -133,6 +137,42 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
             }
         } catch (Exception e) {
             System.out.println("Error: Could not load CharacterA.png.");
+        }
+        
+     // Load the Wizard Spritesheet
+        try {
+            BufferedImage wizardSheet = ImageIO.read(new File("CharacterW.png"));
+            int cols = 8;
+            int rows = 5;
+            int frameW = wizardSheet.getWidth() / cols;
+            int frameH = wizardSheet.getHeight() / rows;
+            
+            wizardSprites = new BufferedImage[rows][cols];
+            for (int y = 0; y < rows; y++) {
+                for (int x = 0; x < cols; x++) {
+                    wizardSprites[y][x] = wizardSheet.getSubimage(x * frameW, y * frameH, frameW, frameH);
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Error: Could not load CharacterW.png.");
+        }
+
+        // Load the Swordsman Spritesheet
+        try {
+            BufferedImage swordsmanSheet = ImageIO.read(new File("CharacterS.png"));
+            int cols = 8;
+            int rows = 5;
+            int frameW = swordsmanSheet.getWidth() / cols;
+            int frameH = swordsmanSheet.getHeight() / rows;
+            
+            swordsmanSprites = new BufferedImage[rows][cols];
+            for (int y = 0; y < rows; y++) {
+                for (int x = 0; x < cols; x++) {
+                    swordsmanSprites[y][x] = swordsmanSheet.getSubimage(x * frameW, y * frameH, frameW, frameH);
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Error: Could not load CharacterS.png.");
         }
 
         // Run the game at ~60 FPS
@@ -421,17 +461,22 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
             g2d.drawString("SWORDSMAN", 585, 320);
         } 
         else if (currentState == GameState.PLAYING) {
-            // Draw Player if not flashing from damage
+        	// Draw Player if not flashing from damage
             if (player.invincibilityTimer <= 0 || (player.invincibilityTimer / 5) % 2 == 0) {
                 
-                if (player.type.equals("Archer") && archerSprites != null) {
+                BufferedImage[][] currentSprites = null;
+                if (player.type.equals("Archer")) currentSprites = archerSprites;
+                else if (player.type.equals("Wizard")) currentSprites = wizardSprites;
+                else if (player.type.equals("Swordsman")) currentSprites = swordsmanSprites;
+                
+                if (currentSprites != null) {
                     BufferedImage img = null;
                     switch(player.animState) {
-                        case 0: img = archerSprites[4][2 + (player.animFrame % 4)]; break; // Idle
-                        case 1: img = archerSprites[0][1 + (player.animFrame % 6)]; break; // Run
-                        case 2: img = archerSprites[2][2 + (player.animFrame % 4)]; break; // Attack
-                        case 3: img = archerSprites[3][3 + (player.animFrame % 2)]; break; // Hit
-                        case 4: img = archerSprites[1][Math.min(7, player.animFrame)]; break; // Dead
+                        case 0: img = currentSprites[4][2 + (player.animFrame % 4)]; break; // Idle
+                        case 1: img = currentSprites[0][1 + (player.animFrame % 6)]; break; // Run
+                        case 2: img = currentSprites[2][2 + (player.animFrame % 4)]; break; // Attack
+                        case 3: img = currentSprites[3][3 + (player.animFrame % 2)]; break; // Hit
+                        case 4: img = currentSprites[1][Math.min(7, player.animFrame)]; break; // Dead
                     }
                     
                     if (img != null) {
@@ -447,7 +492,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
                         }
                     }
                 } else {
-                    // Fallback dot for Wizard and Swordsman
+                    // Fallback dot just in case a spritesheet fails to load
                     g2d.setColor(player.color);
                     g2d.fillOval((int)player.x - 15, (int)player.y - 15, 30, 30);
                 }
