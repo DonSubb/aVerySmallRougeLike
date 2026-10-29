@@ -27,6 +27,8 @@ import java.util.Random;
 //Add items for the chest
 //Add hotbar for items gained
 //Add item effects
+//Change to click to shoot 
+//Make Ui for other basic things
 
 //To Fix
 //Green bar in the ui is to far to the left
