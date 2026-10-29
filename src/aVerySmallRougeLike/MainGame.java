@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Random;
 
 //DonSubb
-//Oct 28 2026
+//Oct 29 2026
 
 //Todo
 //Add more enemy's
@@ -30,7 +30,6 @@ import java.util.Random;
 
 //To Fix
 //Green bar in the ui is to far to the left
-//Fix the drictions the character faces for both the warizard & Swordsman
 
 public class MainGame extends JPanel implements ActionListener, KeyListener, MouseListener {
     
