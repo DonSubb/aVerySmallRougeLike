@@ -43,7 +43,7 @@ import java.util.Set;
 //Make Ui for other basic things                     DONE (pause menu, HUD, game over stats, hints)
 
 //To Fix
-//Green bar in the ui is to far to the left          FIXED (now lines up with the other bars)
+//Green bar in the ui is to far to the left          
 
 public class MainGame extends JPanel implements ActionListener, KeyListener, MouseListener, MouseMotionListener {
 
