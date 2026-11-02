@@ -316,7 +316,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("Simple Roguelike");
+            JFrame frame = new JFrame("Simple Rougelike");
             MainGame game = new MainGame();
             frame.add(game);
             frame.pack();
@@ -1155,7 +1155,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
 
     private void drawMenu(Graphics2D g) {
         drawStars(g);
-        drawLabelBoxCentered(g, "SIMPLE ROGUELIKE", HALF_W, HEIGHT / 3 - 15, 3);
+        drawLabelBoxCentered(g, "SIMPLE ROUGELIKE", HALF_W, HEIGHT / 3 - 15, 3);
         for (UIButton b : menuButtons) b.draw(g);
 
         g.setFont(FONT_BODY);
