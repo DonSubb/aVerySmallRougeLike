@@ -13,6 +13,26 @@ import java.util.Random;
 //DonSubb
 //Oct 29 2026
 
+//Todo
+//Add more enemy's
+//Create spritsheet for all enemy's
+//Add spritesheet into the code
+//Make UI for the main menu
+//Make UI for the character select 
+//Make icons for each character and add them to the UI
+//Change the in game layout(infnite play area)
+//Add all new cards and effects(replace the old ones)
+//Add Journal with all cards 
+//Add chest spawning
+//Add items for the chest
+//Add hotbar for items gained
+//Add item effects
+//Change to click to shoot 
+//Make Ui for other basic things
+
+//To Fix
+//Green bar in the ui is to far to the left
+
 public class MainGame extends JPanel implements ActionListener, KeyListener, MouseListener {
     
     private static final long serialVersionUID = 1L;
@@ -505,11 +525,11 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
             g2d.fillRect(WIDTH / 2 - 260, HEIGHT / 3 - 15, 520, 70);
 
             // Draw Title using custom text 
-            drawCustomTextCentered(g2d, "SIMPLE ROGUELIKE", WIDTH / 2, HEIGHT / 3, 3);
+            drawCustomTextCentered(g2d, "SIMPLE ROUGELIKE", WIDTH / 2, HEIGHT / 3, 3);
             
             // Draw Button
             int btnW = 300; // Doubled size
-            int btnH = 130; // Doubled size
+            int btnH = 250; // Doubled size
             int btnX = WIDTH / 2 - btnW / 2;
             int btnY = HEIGHT / 2;
 
@@ -525,7 +545,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
             }
             
             // Center the "START" text inside the button based on the pressed state
-            int textYOffset = isStartButtonPressed ? 50 : 40; 
+            int textYOffset = isStartButtonPressed ? 100 : 75; 
             drawCustomTextCentered(g2d, "START", WIDTH / 2, btnY + textYOffset, 4); 
             
         } 
