@@ -13,26 +13,6 @@ import java.util.Random;
 //DonSubb
 //Oct 29 2026
 
-//Todo
-//Add more enemy's
-//Create spritsheet for all enemy's
-//Add spritesheet into the code
-//Make UI for the main menu
-//Make UI for the character select 
-//Make icons for each character and add them to the UI
-//Change the in game layout(infnite play area)
-//Add all new cards and effects(replace the old ones)
-//Add Journal with all cards 
-//Add chest spawning
-//Add items for the chest
-//Add hotbar for items gained
-//Add item effects
-//Change to click to shoot 
-//Make Ui for other basic things
-
-//To Fix
-//Green bar in the ui is to far to the left
-
 public class MainGame extends JPanel implements ActionListener, KeyListener, MouseListener {
     
     private static final long serialVersionUID = 1L;
@@ -75,10 +55,19 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
     private BufferedImage textSheet;
     private final String CHARSET = "ABCDEFGHIJKLMNOPQRST  VUWXYZ  1234567890.,:?!()+-="; 
 
-    // Archer Spritesheet
+    // Character Spritesheets
     private BufferedImage[][] archerSprites;
     private BufferedImage[][] wizardSprites;
     private BufferedImage[][] swordsmanSprites;
+    
+    // Star Effect Variables
+    private BufferedImage[][] starSprites = new BufferedImage[5][9];
+    private List<Star> menuStars = new ArrayList<>();
+    
+    // Button Variables
+    private BufferedImage[] buttonFrames = new BufferedImage[2];
+    private boolean isStartButtonPressed = false;
+    private int startButtonTimer = 0;
 
     public MainGame() {
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
@@ -119,7 +108,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         try {
             textSheet = ImageIO.read(new File("Text.png"));
         } catch (Exception e) {
-            System.out.println("Error: Could not load Text1.png.");
+            System.out.println("Error: Could not load Text.png.");
         }
 
         // Load the Archer Spritesheet
@@ -140,7 +129,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
             System.out.println("Error: Could not load CharacterA.png.");
         }
         
-     // Load the Wizard Spritesheet
+        // Load the Wizard Spritesheet
         try {
             BufferedImage wizardSheet = ImageIO.read(new File("CharacterW.png"));
             int cols = 8;
@@ -176,6 +165,39 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
             System.out.println("Error: Could not load CharacterS.png.");
         }
 
+        // Load Menu Star Spritesheets[cite: 1, 2, 3, 4, 5]
+        String[] starFiles = {"Star1.png", "Star2.png", "Star3.png", "Star4.png", "Star5.png"};
+        for (int i = 0; i < starFiles.length; i++) {
+            try {
+                BufferedImage sheet = ImageIO.read(new File(starFiles[i]));
+                int cols = 3;
+                int rows = 3;
+                int frameW = sheet.getWidth() / cols;
+                int frameH = sheet.getHeight() / rows;
+                
+                int count = 0;
+                for (int y = 0; y < rows; y++) {
+                    for (int x = 0; x < cols; x++) {
+                        starSprites[i][count] = sheet.getSubimage(x * frameW, y * frameH, frameW, frameH);
+                        count++;
+                    }
+                }
+            } catch (Exception e) {
+                System.out.println("Error: Could not load " + starFiles[i]);
+            }
+        }
+        
+        // Load Button Spritesheet[cite: 6]
+        try {
+            BufferedImage btnSheet = ImageIO.read(new File("Button.png"));
+            int frameW = btnSheet.getWidth();
+            int frameH = btnSheet.getHeight() / 2; // Split image in half vertically
+            buttonFrames[0] = btnSheet.getSubimage(0, 0, frameW, frameH); // Top frame (unpressed)
+            buttonFrames[1] = btnSheet.getSubimage(0, frameH, frameW, frameH); // Bottom frame (pressed)
+        } catch (Exception e) {
+            System.out.println("Error: Could not load Button.png.");
+        }
+
         // Run the game at ~60 FPS
         timer = new Timer(16, this);
         timer.start();
@@ -194,7 +216,37 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
     // --- GAME LOOP ---
     @Override
     public void actionPerformed(ActionEvent e) {
-        if (currentState == GameState.PLAYING) {
+        if (currentState == GameState.MENU) {
+            
+            // Handle Start Button Animation Delay
+            if (isStartButtonPressed) {
+                startButtonTimer++;
+                // 30 frames at ~60 FPS equals roughly 0.5 seconds
+                if (startButtonTimer >= 30) {
+                    isStartButtonPressed = false;
+                    startButtonTimer = 0;
+                    currentState = GameState.CHAR_SELECT;
+                }
+            }
+            
+            // Randomly spawn a new star (15% chance per frame)
+            if (random.nextInt(100) < 15) {
+                int sx = random.nextInt(WIDTH);
+                int sy = random.nextInt(HEIGHT);
+                int type = random.nextInt(5); 
+                menuStars.add(new Star(sx, sy, type));
+            }
+            
+            // Update stars and remove finished ones
+            for (int i = menuStars.size() - 1; i >= 0; i--) {
+                Star s = menuStars.get(i);
+                s.update();
+                if (!s.active) {
+                    menuStars.remove(i);
+                }
+            }
+        }
+        else if (currentState == GameState.PLAYING) {
             updateGame();
         } 
         else if (currentState == GameState.LEVEL_UP && !bookOpen) {
@@ -438,10 +490,44 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
         if (currentState == GameState.MENU) {
-            drawCenteredString(g2d, "SIMPLE ROGUELIKE", HEIGHT / 3, Color.WHITE, 40);
-            g2d.setColor(Color.LIGHT_GRAY);
-            g2d.fillRect(WIDTH/2 - 100, HEIGHT/2, 200, 50);
-            drawCenteredString(g2d, "START", HEIGHT/2 + 35, Color.BLACK, 24);
+            // Draw Stars
+            for (Star s : menuStars) {
+                BufferedImage img = starSprites[s.type][s.frameIndex];
+                if (img != null) {
+                    int drawSize = 48; // Adjust to make stars larger/smaller
+                    g2d.drawImage(img, s.x - drawSize/2, s.y - drawSize/2, drawSize, drawSize, null);
+                }
+            }
+
+            // Draw White Box Behind Title
+            g2d.setColor(Color.WHITE);
+            // The text is 16 chars long. 16 * 10 * 3 = 480 px width. Add padding for 520 total width.
+            g2d.fillRect(WIDTH / 2 - 260, HEIGHT / 3 - 15, 520, 70);
+
+            // Draw Title using custom text 
+            drawCustomTextCentered(g2d, "SIMPLE ROGUELIKE", WIDTH / 2, HEIGHT / 3, 3);
+            
+            // Draw Button
+            int btnW = 300; // Doubled size
+            int btnH = 130; // Doubled size
+            int btnX = WIDTH / 2 - btnW / 2;
+            int btnY = HEIGHT / 2;
+
+            if (buttonFrames[0] != null && buttonFrames[1] != null) {
+                if (isStartButtonPressed) {
+                    g2d.drawImage(buttonFrames[1], btnX, btnY, btnW, btnH, null);
+                } else {
+                    g2d.drawImage(buttonFrames[0], btnX, btnY, btnW, btnH, null);
+                }
+            } else {
+                g2d.setColor(isStartButtonPressed ? Color.DARK_GRAY : Color.LIGHT_GRAY);
+                g2d.fillRect(btnX, btnY, btnW, btnH);
+            }
+            
+            // Center the "START" text inside the button based on the pressed state
+            int textYOffset = isStartButtonPressed ? 50 : 40; 
+            drawCustomTextCentered(g2d, "START", WIDTH / 2, btnY + textYOffset, 4); 
+            
         } 
         else if (currentState == GameState.CHAR_SELECT) {
             drawCenteredString(g2d, "SELECT YOUR CLASS", 100, Color.WHITE, 30);
@@ -584,16 +670,30 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
 
     // --- INPUT HANDLING ---
     @Override
+    public void mousePressed(MouseEvent e) {
+        int mx = e.getX();
+        int my = e.getY();
+        
+        // Trigger Start Button press animation immediately
+        if (currentState == GameState.MENU && !isStartButtonPressed) {
+            int btnW = 200; // Doubled size
+            int btnH = 130; // Doubled size
+            int btnX = WIDTH / 2 - btnW / 2;
+            int btnY = HEIGHT / 2;
+            
+            if (mx >= btnX && mx <= btnX + btnW && my >= btnY && my <= btnY + btnH) {
+                isStartButtonPressed = true;
+                startButtonTimer = 0; 
+            }
+        }
+    }
+
+    @Override
     public void mouseClicked(MouseEvent e) {
         int mx = e.getX();
         int my = e.getY();
 
-        if (currentState == GameState.MENU) {
-            if (mx >= WIDTH/2 - 100 && mx <= WIDTH/2 + 100 && my >= HEIGHT/2 && my <= HEIGHT/2 + 50) {
-                currentState = GameState.CHAR_SELECT;
-            }
-        } 
-        else if (currentState == GameState.CHAR_SELECT) {
+        if (currentState == GameState.CHAR_SELECT) {
             if (mx >= 150 && mx <= 200 && my >= 250 && my <= 300) startGame("Wizard");
             if (mx >= 375 && mx <= 425 && my >= 250 && my <= 300) startGame("Archer");
             if (mx >= 600 && mx <= 650 && my >= 250 && my <= 300) startGame("Swordsman");
@@ -659,7 +759,6 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
     }
     
     @Override public void keyTyped(KeyEvent e) {}
-    @Override public void mousePressed(MouseEvent e) {}
     @Override public void mouseReleased(MouseEvent e) {}
     @Override public void mouseEntered(MouseEvent e) {}
     @Override public void mouseExited(MouseEvent e) {}
@@ -736,5 +835,31 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
     class UpgradeCard {
         String name;
         public UpgradeCard(String name) { this.name = name; }
+    }
+
+    class Star {
+        int x, y;
+        int type;
+        int frameIndex = 0;
+        int tickCounter = 0;
+        boolean active = true;
+
+        public Star(int x, int y, int type) {
+            this.x = x;
+            this.y = y;
+            this.type = type;
+        }
+
+        public void update() {
+            tickCounter++;
+            // 60 FPS game timer / 10 ticks = 6 FPS animation speed
+            if (tickCounter >= 10) { 
+                tickCounter = 0;
+                frameIndex++;
+                if (frameIndex >= 9) { // 9 frames total in the 3x3 sheet
+                    active = false;
+                }
+            }
+        }
     }
 }
