@@ -271,6 +271,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
 
     // Images
     private Image uiPanelImg;
+    private BufferedImage titleImg;
     private BufferedImage[] bookFrames;
     private int currentBookFrame = 0;
     private int bookAnimTimer = 0;
@@ -330,6 +331,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
 
     private void loadAssets() {
         uiPanelImg = loadImage("character_panel.png");
+        titleImg = loadImage("Title.png");
         textSheet = loadImage("Text.png");
         bookFrames = flatten(loadSheet("Open_book.png", 4, 3, true));
 
@@ -1156,7 +1158,20 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
 
     private void drawMenu(Graphics2D g) {
         drawStars(g);
-        drawLabelBoxCentered(g, "SIMPLE ROUGELIKE", HALF_W, HEIGHT / 3 - 15, 3);
+        
+        int titleY = HEIGHT / 3 - 15;
+        if (titleImg != null) {
+            // Adjust the width (300) and height (100) to fit your specific pixel art proportions
+            int imgW = 1600; 
+            int imgH = 600;
+            g.drawImage(titleImg, HALF_W - imgW / 2, titleY - 260, imgW, imgH, null);
+            
+            // Draw the text directly on top of your new image without the white box
+            drawCustomTextCentered(g, "SIMPLE ROUGELIKE", HALF_W, titleY + 20, 3);
+        } else {
+            // Fallback if the image fails to load
+            drawLabelBoxCentered(g, "SIMPLE ROUGELIKE", HALF_W, titleY, 3);
+        }
         for (UIButton b : menuButtons) b.draw(g);
 
         g.setFont(FONT_BODY);
