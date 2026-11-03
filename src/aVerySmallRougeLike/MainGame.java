@@ -42,6 +42,7 @@ import java.util.Set;
 //To Fix
 //Green bar in the ui is to far to the left    
 //Size of font in many of the menus
+//Move the text for the buttons down a little
 
 public class MainGame extends JPanel implements ActionListener, KeyListener, MouseListener, MouseMotionListener {
 
@@ -1159,15 +1160,15 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         int titleY = HEIGHT / 3 - 15;
         if (titleImg != null) {
             // Adjust the width (300) and height (100) to fit your specific pixel art proportions
-            int imgW = 1600; 
-            int imgH = 600;
-            g.drawImage(titleImg, HALF_W - imgW / 2, titleY - 260, imgW, imgH, null);
+            int imgW = 750; 
+            int imgH = 150;
+            g.drawImage(titleImg, HALF_W - imgW / 2, titleY - 38, imgW, imgH, null);
             
             // Draw the text directly on top of your new image without the white box
-            drawCustomTextCentered(g, "SIMPLE ROUGELIKE", HALF_W, titleY + 20, 2);
+            drawCustomTextCentered(g, "SIMPLE ROUGELIKE", HALF_W, titleY + 20, 1);
         } else {
             // Fallback if the image fails to load
-            drawLabelBoxCentered(g, "SIMPLE ROUGELIKE", HALF_W, titleY, 2);
+            drawLabelBoxCentered(g, "SIMPLE ROUGELIKE", HALF_W, titleY, 1);
         }
         for (UIButton b : menuButtons) b.draw(g);
 
@@ -1913,7 +1914,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
             if (sprite && buttonFrames[0] != null && buttonFrames[1] != null) {
                 g.drawImage(buttonFrames[pressed ? 1 : 0], bounds.x, bounds.y, bounds.width, bounds.height, null);
                 double frac = pressed ? 0.50 : 0.40; // where the button face sits inside the sprite
-                drawCustomTextCentered(g, label, cx, bounds.y + (int) (bounds.height * frac) - GLYPH_H, 1);
+                drawCustomTextCentered(g, label, cx, bounds.y + 20 + (int) (bounds.height * frac) - GLYPH_H, 1);
             } else {
                 boolean hover = !pressed && bounds.contains(mouseX, mouseY);
                 g.setColor(pressed ? Color.GRAY : hover ? Color.WHITE : Color.LIGHT_GRAY);
