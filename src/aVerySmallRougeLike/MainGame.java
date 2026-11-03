@@ -22,28 +22,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-//DonSubb
-//Aditya Kaundinya
-//Nov 3 2026
-
-//Todo
-//Create spritesheet for all enemy's   
-//Create a white backround for the Title
-//Put buttons for many buttons
-//Make cards for the level up book
-//Input the chest for the chests found
-//Input the item icons
-//Make a hotbar
-//Make a character card for each character
-//Make cards for the journal
-//Add trees that can spawn
-//Add the chicken boss
-
-//To Fix
-//Green bar in the ui is to far to the left    
-//Size of font in many of the menus
-//Move the text for the buttons down a little
-
 public class MainGame extends JPanel implements ActionListener, KeyListener, MouseListener, MouseMotionListener {
 
     private static final long serialVersionUID = 1L;
@@ -56,13 +34,12 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
     private static final int HALF_W = WIDTH / 2;
     private static final int HALF_H = HEIGHT / 2;
 
-    private static final int TILE = 256;                 // ground texture size
-    private static final int MAX_ENEMIES = 250;          // performance cap
+    private static final int TILE = 256;                 
+    private static final int MAX_ENEMIES = 250;          
     private static final int MAX_GEMS = 300;
-    private static final int BUTTON_PRESS_FRAMES = 20;   // delay so the pressed frame is visible
-    private static final double BTN_ASPECT = 250.0 / 300.0; // button height / width (same stretch you used before)
+    private static final int BUTTON_PRESS_FRAMES = 20;   
+    private static final double BTN_ASPECT = 250.0 / 300.0; 
 
-    // Custom text spritesheet (10 columns, 10x12 cells)
     private static final String CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!?$";
     private static final int GLYPH_W = 25;
     private static final int GLYPH_H = 25;
@@ -75,18 +52,15 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         }
     }
 
-    // Hotbar layout
     private static final int SLOT = 44;
     private static final int SLOT_GAP = 6;
     private static final int HOTBAR_Y = HEIGHT - 56;
 
-    // Cached enum arrays (values() clones the array every call)
     private static final HeroClass[] HEROES = HeroClass.values();
     private static final EnemyType[] ENEMY_TYPES = EnemyType.values();
     private static final Card[] CARDS = Card.values();
     private static final Item[] ITEMS = Item.values();
 
-    // Cached drawing objects
     private static final Color OVERLAY = new Color(0, 0, 0, 150);
     private static final Color PANEL_FILL = new Color(235, 228, 205);
     private static final Color PANEL_HOVER = new Color(255, 250, 230);
@@ -108,13 +82,12 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
     private final Map<Integer, Font> boldFonts = new HashMap<>();
 
     // =====================================================================
-    //  ENUMS (all game data lives here, easy to tweak)
+    //  ENUMS
     // =====================================================================
     enum GameState { MENU, CHAR_SELECT, JOURNAL, PLAYING, PAUSED, LEVEL_UP, GAME_OVER }
 
     enum Behavior { CHASE, WEAVE, RANGED }
 
-    /** hp, damage, speed, xp, size, color, unlockWave, spawnWeight, behavior. Weight 0 = never spawned directly. */
     enum EnemyType {
         RAT(15, 5, 2.0, 2, 16, new Color(139, 69, 19), 1, 10, Behavior.CHASE),
         GOBLIN(30, 10, 1.2, 5, 24, new Color(0, 100, 0), 1, 10, Behavior.CHASE),
@@ -167,7 +140,6 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         Rarity(int weight, Color color) { this.weight = weight; this.color = color; }
     }
 
-    /** Level-up cards. Names stay A-Z/space so the custom text sheet can draw them. maxLevel 99 = unlimited. */
     enum Card {
         SHARP_EDGE("SHARP EDGE", Rarity.COMMON, 8, "Damage +20%."),
         LONG_SHOT("LONG SHOT", Rarity.COMMON, 6, "Attack range +15%."),
@@ -196,7 +168,6 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         }
     }
 
-    /** Chest items. consumable = used from the hotbar, otherwise a passive applied when picked up. */
     enum Item {
         POTION("POTION", true, 25, new Color(220, 60, 70), "Heals 40% of your max HP."),
         BOMB("BOMB", true, 16, new Color(70, 70, 70), "Blasts every nearby enemy."),
@@ -228,12 +199,10 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
     private final Timer timer;
     private final Random random = new Random();
 
-    // Input
     private boolean upPressed, downPressed, leftPressed, rightPressed, escHeld;
     private boolean mouseHeld;
     private int mouseX = HALF_W, mouseY = HALF_H;
 
-    // World
     private Player player;
     private int camX, camY;
     private final List<Enemy> enemies = new ArrayList<>();
@@ -245,7 +214,6 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
     private final List<FloatText> floatTexts = new ArrayList<>();
     private final List<Card> currentChoices = new ArrayList<>();
 
-    // Wave / spawn
     private int frameCount = 0;
     private int spawnRate = 120;
     private int spawnTimer = 60;
@@ -255,7 +223,6 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
     private int totalKills = 0;
     private int chestTimer = 0;
 
-    // Buffs / messages
     private int rageTimer = 0;
     private int freezeTimer = 0;
     private String bannerText = "";
@@ -263,11 +230,9 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
     private String toastText = "";
     private int toastTimer = 0;
 
-    // Journal
     private static final Path JOURNAL_FILE = Paths.get("journal.dat");
     private final Set<Card> discovered = EnumSet.noneOf(Card.class);
 
-    // Images
     private Image uiPanelImg;
     private BufferedImage titleImg;
     private BufferedImage[] bookFrames;
@@ -275,14 +240,17 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
     private int bookAnimTimer = 0;
     private boolean bookOpen = false;
     private BufferedImage textSheet;
+    private BufferedImage smallTextSheet;
+    private int smallGlyphW;
+    private int smallGlyphH;
+    
     private final Map<HeroClass, BufferedImage[][]> heroSprites = new EnumMap<>(HeroClass.class);
-    private BufferedImage[][] enemySprites;            // optional: Enemies.png (rows = EnemyType order, 4 frames each)
+    private BufferedImage[][] enemySprites;            
     private final BufferedImage[][] starSprites = new BufferedImage[5][];
     private final BufferedImage[] buttonFrames = new BufferedImage[2];
     private final BufferedImage groundTile = createGroundTile();
     private final Ellipse2D portraitClip = new Ellipse2D.Float(20, 20, 55, 55);
 
-    // Menu
     private final List<Star> menuStars = new ArrayList<>();
     private final List<UIButton> menuButtons = new ArrayList<>();
     private final List<UIButton> pauseButtons = new ArrayList<>();
@@ -310,7 +278,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         loadJournal();
         buildUi();
 
-        timer = new Timer(16, this); // ~60 FPS
+        timer = new Timer(16, this); 
         timer.start();
     }
 
@@ -331,6 +299,13 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         uiPanelImg = loadImage("character_panel.png");
         titleImg = loadImage("Title.png");
         textSheet = loadImage("Text.png");
+        
+        smallTextSheet = loadImage("SmallText.png");
+        if (smallTextSheet != null) {
+            smallGlyphW = smallTextSheet.getWidth() / 6; 
+            smallGlyphH = smallTextSheet.getHeight() / 7; 
+        }
+        
         bookFrames = flatten(loadSheet("Open_book.png", 4, 3, true));
 
         for (HeroClass h : HEROES) heroSprites.put(h, loadSheet(h.sheet, 8, 5, true));
@@ -340,13 +315,11 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
 
         BufferedImage btnSheet = loadImage("Button.png");
         if (btnSheet != null) {
-            int frameH = btnSheet.getHeight() / 2; // top = unpressed, bottom = pressed
+            int frameH = btnSheet.getHeight() / 2;
             buttonFrames[0] = btnSheet.getSubimage(0, 0, btnSheet.getWidth(), frameH);
             buttonFrames[1] = btnSheet.getSubimage(0, frameH, btnSheet.getWidth(), frameH);
         }
 
-        // Optional enemy sheet. Drop an "Enemies.png" next to the game: one row per EnemyType
-        // (RAT, GOBLIN, BAT, SLIME, SKELETON, OGRE, MINI_SLIME), 4 animation frames per row.
         if (new File("Enemies.png").exists()) enemySprites = loadSheet("Enemies.png", 4, ENEMY_TYPES.length, true);
     }
 
@@ -378,7 +351,6 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         return list.toArray(new BufferedImage[0]);
     }
 
-    /** Procedural, seamless ground texture (replace with your own tile image later if you like). */
     private BufferedImage createGroundTile() {
         BufferedImage img = new BufferedImage(TILE, TILE, BufferedImage.TYPE_INT_RGB);
         Random r = new Random(7);
@@ -412,16 +384,13 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         pauseButtons.add(new UIButton(px, py, bw, bh, "RESUME", true, () -> setState(GameState.PLAYING)));
         pauseButtons.add(new UIButton(px + bw + gap, py, bw, bh, "MENU", true, () -> setState(GameState.MENU)));
 
-        backButtons.add(new UIButton(15, 15, 110, 40, "BACK", false, () -> setState(GameState.MENU)));
+        backButtons.add(new UIButton(15, 15, 110, 40, "BACK", true, () -> setState(GameState.MENU)));
 
         int cardW = 210, cardH = 340, cardGap = 30;
         int cx0 = (WIDTH - (HEROES.length * cardW + (HEROES.length - 1) * cardGap)) / 2;
         for (int i = 0; i < HEROES.length; i++) heroCards[i] = new Rectangle(cx0 + i * (cardW + cardGap), 130, cardW, cardH);
     }
 
-    // =====================================================================
-    //  STATE / JOURNAL
-    // =====================================================================
     private void setState(GameState s) {
         currentState = s;
         stateTimer = 0;
@@ -450,9 +419,6 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         }
     }
 
-    // =====================================================================
-    //  GAME LOOP
-    // =====================================================================
     @Override
     public void actionPerformed(ActionEvent e) {
         uiTick++;
@@ -496,7 +462,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
 
     private boolean pressButtons(int mx, int my) {
         List<UIButton> list = buttonsForState();
-        for (UIButton b : list) if (b.pressed) return true; // one at a time
+        for (UIButton b : list) if (b.pressed) return true;
         for (UIButton b : list) {
             if (b.bounds.contains(mx, my)) { b.press(); return true; }
         }
@@ -532,7 +498,6 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         frameCount++;
         final Player p = player;
 
-        // --- Movement (the world is infinite) ---
         double dx = 0, dy = 0;
         if (upPressed) dy -= 1;
         if (downPressed) dy += 1;
@@ -551,7 +516,6 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         else if (dx > 0) p.facingRight = true;
         updateCamera();
 
-        // --- Timers ---
         if (rageTimer > 0) rageTimer--;
         if (freezeTimer > 0) freezeTimer--;
         if (bannerTimer > 0) bannerTimer--;
@@ -559,16 +523,14 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         if (p.invincibilityTimer > 0) p.invincibilityTimer--;
         if (p.regen > 0 && p.hp < p.maxHp) p.hp = Math.min(p.maxHp, p.hp + p.regen / 60.0);
 
-        // --- Click to shoot ---
         p.cooldownTimer--;
         if (mouseHeld && p.cooldownTimer <= 0) fire();
 
-        // --- Animation state ---
         int newState;
-        if (p.invincibilityTimer > 40) newState = 3;        // Hit
-        else if (p.attackAnimTimer > 0) newState = 2;       // Attack
-        else if (moving) newState = 1;                      // Run
-        else newState = 0;                                  // Idle
+        if (p.invincibilityTimer > 40) newState = 3;
+        else if (p.attackAnimTimer > 0) newState = 2;
+        else if (moving) newState = 1;
+        else newState = 0;
         if (p.attackAnimTimer > 0) p.attackAnimTimer--;
         if (newState != p.animState) {
             p.animState = newState;
@@ -589,7 +551,6 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
             if (--f.life <= 0) floatTexts.remove(i);
         }
 
-        // --- Spawning ---
         if (--spawnTimer <= 0) {
             spawnTimer = spawnRate;
             if (spawnRate > 30) spawnRate--;
@@ -612,7 +573,6 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         }
     }
 
-    // --- Shooting ---
     private void fire() {
         Player p = player;
         double angle = Math.atan2(mouseY - HALF_H, mouseX - HALF_W);
@@ -679,7 +639,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
             if (!frozen) en.update(p);
 
             double d2 = distSq(en.x, en.y, p.x, p.y);
-            if (d2 > 1200.0 * 1200.0) { // fell behind: bring it back to the edge of the screen
+            if (d2 > 1200.0 * 1200.0) { 
                 placeOnSpawnRing(en);
                 continue;
             }
@@ -731,9 +691,6 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         }
     }
 
-    // =====================================================================
-    //  COMBAT / PROGRESSION HELPERS
-    // =====================================================================
     private void damageEnemy(Enemy en, double dmg, boolean crit) {
         en.hp -= dmg;
         en.hitFlash = 4;
@@ -758,7 +715,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
             pendingSpawns.add(new Enemy(en.x - 12, en.y, EnemyType.MINI_SLIME, wave));
             pendingSpawns.add(new Enemy(en.x + 12, en.y, EnemyType.MINI_SLIME, wave));
         }
-        if (en.type.weight > 0) { // minions don't count toward the wave
+        if (en.type.weight > 0) {
             if (++enemiesKilledThisWave >= enemiesTotalThisWave) {
                 wave++;
                 enemiesKilledThisWave = 0;
@@ -777,7 +734,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         floatTexts.add(new FloatText(p.x, p.y - 30, "-" + (int) Math.ceil(actual), Color.RED));
         if (p.hp <= 0) {
             p.hp = 0;
-            p.animState = 4; // Dead
+            p.animState = 4; 
             p.animFrame = 0;
             p.animTimer = 0;
             p.invincibilityTimer = 0;
@@ -799,7 +756,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
     }
 
     private void addGem(double x, double y, int value) {
-        if (gems.size() >= MAX_GEMS) { // merge instead of growing without limit
+        if (gems.size() >= MAX_GEMS) { 
             gems.get(random.nextInt(gems.size())).value += value;
             return;
         }
@@ -872,7 +829,6 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         if (discovered.add(c)) saveJournal();
     }
 
-    // --- Items / chests ---
     private void openChest(Chest c) {
         Item it = rollItem();
         player.itemCounts[it.ordinal()]++;
@@ -917,7 +873,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         if (!it.consumable || p.itemCounts[it.ordinal()] <= 0) return;
         switch (it) {
             case POTION:
-                if (p.hp >= p.maxHp) return; // don't waste it
+                if (p.hp >= p.maxHp) return; 
                 heal(p.maxHp * 0.4, true);
                 break;
             case BOMB: {
@@ -939,7 +895,6 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         showToast("USED " + it.label);
     }
 
-    // --- Spawning ---
     private EnemyType pickEnemyType() {
         int total = 0;
         for (EnemyType t : ENEMY_TYPES) if (t.weight > 0 && t.unlockWave <= wave) total += t.weight;
@@ -961,7 +916,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
 
     private void placeOnSpawnRing(Enemy en) {
         double a = random.nextDouble() * Math.PI * 2;
-        double r = 520 + random.nextDouble() * 80; // just outside the screen corners
+        double r = 520 + random.nextDouble() * 80; 
         en.x = player.x + Math.cos(a) * r;
         en.y = player.y + Math.sin(a) * r;
     }
@@ -1006,13 +961,11 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         setState(GameState.PLAYING);
     }
 
-    // --- Math helpers ---
     private static double distSq(double x1, double y1, double x2, double y2) {
         double dx = x2 - x1, dy = y2 - y1;
         return dx * dx + dy * dy;
     }
 
-    /** Squared distance from point P to the segment A-B (stops fast projectiles skipping through enemies). */
     private static double segDistSq(double px, double py, double ax, double ay, double bx, double by) {
         double abx = bx - ax, aby = by - ay;
         double len2 = abx * abx + aby * aby;
@@ -1079,6 +1032,36 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         drawLabelBox(g, text, cx - labelBoxWidth(text, scale) / 2, y, scale);
     }
 
+    private void drawSmallCustomText(Graphics2D g, String text, int x, int y) {
+        if (smallTextSheet == null) return;
+        for (int i = 0; i < text.length(); i++) {
+            char c = Character.toUpperCase(text.charAt(i));
+            int idx = c < 128 ? GLYPH_INDEX[c] : -1;
+            if (idx != -1) {
+                int sx = (idx % 6) * smallGlyphW;
+                int sy = (idx / 6) * smallGlyphH;
+                g.drawImage(smallTextSheet, x, y, x + smallGlyphW, y + smallGlyphH,
+                        sx, sy, sx + smallGlyphW, sy + smallGlyphH, null);
+            }
+            x += smallGlyphW;
+        }
+    }
+
+    private int smallTextWidth(String text) {
+        if (smallTextSheet == null) return text.length() * 8;
+        return text.length() * smallGlyphW;
+    }
+
+    private void drawSmallLabelBox(Graphics2D g, String text, int x, int y) {
+        int w = smallTextWidth(text) + 16;
+        int h = smallGlyphH + 10;
+        g.setColor(Color.WHITE);
+        g.fillRoundRect(x, y, w, h, 8, 8);
+        g.setColor(BORDER);
+        g.drawRoundRect(x, y, w, h, 8, 8);
+        drawSmallCustomText(g, text, x + 8, y + 5);
+    }
+
     private void drawCenteredString(Graphics2D g, String text, int y, Color c, int size) {
         g.setColor(c);
         g.setFont(getBoldFont(size));
@@ -1143,7 +1126,6 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         }
     }
 
-    // --- Menu screens ---
     private void drawStars(Graphics2D g) {
         for (Star s : menuStars) {
             BufferedImage[] frames = starSprites[s.type];
@@ -1159,15 +1141,11 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         
         int titleY = HEIGHT / 3 - 15;
         if (titleImg != null) {
-            // Adjust the width (300) and height (100) to fit your specific pixel art proportions
             int imgW = 750; 
             int imgH = 150;
             g.drawImage(titleImg, HALF_W - imgW / 2, titleY - 38, imgW, imgH, null);
-            
-            // Draw the text directly on top of your new image without the white box
             drawCustomTextCentered(g, "SIMPLE ROUGELIKE", HALF_W, titleY + 20, 1);
         } else {
-            // Fallback if the image fails to load
             drawLabelBoxCentered(g, "SIMPLE ROUGELIKE", HALF_W, titleY, 1);
         }
         for (UIButton b : menuButtons) b.draw(g);
@@ -1181,7 +1159,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
     private void drawHeroIcon(Graphics2D g, HeroClass h, int x, int y, int size, int tick) {
         BufferedImage[][] sp = heroSprites.get(h);
         if (sp != null) {
-            g.drawImage(sp[4][2 + Math.floorMod(tick, 4)], x, y, size, size, null); // idle frames
+            g.drawImage(sp[4][2 + Math.floorMod(tick, 4)], x, y, size, size, null); 
         } else {
             g.setColor(h.color);
             g.fillOval(x, y, size, size);
@@ -1216,7 +1194,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
                 "SPEED: " + String.format("%.1f", h.speed),
                 "ATK SPD: " + String.format("%.1f", 60.0 / h.cooldown)
             };
-            for (int s = 0; s < stats.length; s++) drawCustomText(g, stats[s], r.x + 30, r.y + 172 + s * 16, 1);
+            for (int s = 0; s < stats.length; s++) drawSmallCustomText(g, stats[s], r.x + 30, r.y + 172 + s * 16);
 
             g.setFont(FONT_BODY);
             g.setColor(TEXT_DARK);
@@ -1226,7 +1204,16 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
 
     private void drawJournal(Graphics2D g) {
         drawStars(g);
-        drawLabelBoxCentered(g, "JOURNAL", HALF_W, 15, 3);
+        
+        if (titleImg != null) {
+            int imgW = 400; 
+            int imgH = 80;  
+            g.drawImage(titleImg, HALF_W - imgW / 2, 10, imgW, imgH, null);
+            drawCustomTextCentered(g, "JOURNAL", HALF_W, 35, 1);
+        } else {
+            drawLabelBoxCentered(g, "JOURNAL", HALF_W, 15, 3);
+        }
+        
         for (UIButton b : backButtons) b.draw(g);
 
         int rows = (CARDS.length + 1) / 2;
@@ -1247,7 +1234,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
             g.drawRoundRect(x, y, panelW, panelH, 10, 10);
 
             if (found) {
-                drawCustomText(g, c.label, x + 10, y + 6, 1);
+                drawSmallCustomText(g, c.label, x + 10, y + 6);
                 g.setFont(FONT_BODY_BOLD);
                 g.setColor(c.rarity.color);
                 String tag = c.rarity.name() + (c.maxLevel >= 99 ? "" : "  MAX LV " + c.maxLevel);
@@ -1256,7 +1243,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
                 g.setColor(TEXT_DARK);
                 g.drawString(c.description, x + 10, y + panelH - 8);
             } else {
-                drawCustomText(g, "???", x + 10, y + 6, 1);
+                drawSmallCustomText(g, "???", x + 10, y + 6);
                 g.setFont(FONT_BODY);
                 g.setColor(Color.DARK_GRAY);
                 g.drawString("Pick this card in a run to discover it.", x + 10, y + panelH - 8);
@@ -1265,7 +1252,6 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         drawLabelBoxCentered(g, "DISCOVERED: " + discovered.size() + "/" + CARDS.length, HALF_W, HEIGHT - 38, 1);
     }
 
-    // --- World ---
     private void drawWorld(Graphics2D g) {
         int startX = -Math.floorMod(camX, TILE);
         int startY = -Math.floorMod(camY, TILE);
@@ -1322,7 +1308,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
 
     private void drawPlayer(Graphics2D g) {
         Player p = player;
-        if (p.invincibilityTimer > 0 && (p.invincibilityTimer / 5) % 2 != 0) return; // damage flash
+        if (p.invincibilityTimer > 0 && (p.invincibilityTimer / 5) % 2 != 0) return; 
 
         int size = 48;
         int px = (int) Math.round(p.x) - size / 2;
@@ -1331,18 +1317,18 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         g.fillOval(px + 8, py + size - 10, size - 16, 10);
 
         BufferedImage[][] sp = heroSprites.get(p.hero);
-        if (sp == null) { // fallback if the spritesheet failed to load
+        if (sp == null) { 
             g.setColor(p.hero.color);
             g.fillOval((int) p.x - 15, (int) p.y - 15, 30, 30);
             return;
         }
         BufferedImage img = null;
         switch (p.animState) {
-            case 0: img = sp[4][2 + (p.animFrame % 4)]; break;          // Idle
-            case 1: img = sp[0][1 + (p.animFrame % 6)]; break;          // Run
-            case 2: img = sp[2][2 + (p.animFrame % 4)]; break;          // Attack
-            case 3: img = sp[3][3 + (p.animFrame % 2)]; break;          // Hit
-            case 4: img = sp[1][Math.min(7, p.animFrame)]; break;       // Dead
+            case 0: img = sp[4][2 + (p.animFrame % 4)]; break;          
+            case 1: img = sp[0][1 + (p.animFrame % 6)]; break;          
+            case 2: img = sp[2][2 + (p.animFrame % 4)]; break;          
+            case 3: img = sp[3][3 + (p.animFrame % 2)]; break;          
+            case 4: img = sp[1][Math.min(7, p.animFrame)]; break;       
         }
         if (img == null) return;
         if (p.facingRight) g.drawImage(img, px, py, size, size, null);
@@ -1387,7 +1373,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
     private void drawChestArrows(Graphics2D g) {
         Player p = player;
         for (Chest c : chests) {
-            if (onScreen(c.x, c.y, -10)) continue; // already visible
+            if (onScreen(c.x, c.y, -10)) continue; 
             double ang = Math.atan2(c.y - p.y, c.x - p.x);
             double cos = Math.cos(ang), sin = Math.sin(ang);
             double tx = Math.abs(cos) > 1e-6 ? (HALF_W - 25) / Math.abs(cos) : Double.MAX_VALUE;
@@ -1415,12 +1401,10 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         g.drawLine(mouseX, mouseY + 4, mouseX, mouseY + 12);
     }
 
-    // --- HUD ---
     private void drawHud(Graphics2D g) {
         Player p = player;
         int uiX = 10, uiY = 10;
 
-        // Portrait (built from the hero's idle sprite)
         Shape oldClip = g.getClip();
         g.setClip(portraitClip);
         g.setColor(p.hero.color);
@@ -1428,7 +1412,6 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         drawHeroIcon(g, p.hero, uiX + 1, uiY + 3, 72, uiTick / 8);
         g.setClip(oldClip);
 
-        // Bars (all share the same left edge - this is the "green bar too far left" fix)
         double hpPercent = Math.max(0, p.hp / p.maxHp);
         double xpPercent = Math.min(1.0, p.xp / p.xpToNextLevel);
         double wavePercent = Math.max(0, (double) (enemiesTotalThisWave - enemiesKilledThisWave) / enemiesTotalThisWave);
@@ -1459,20 +1442,17 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
             g.drawString("Missing character_panel.png!", uiX, uiY + 20);
         }
 
-        // Level / wave and buffs under the panel
         int ty = uiY + panelH + 6;
-        drawLabelBox(g, "LV " + p.level + "  WAVE " + wave, uiX, ty, 1);
-        if (rageTimer > 0) { ty += 24; drawLabelBox(g, "RAGE " + (rageTimer / 60 + 1) + "S", uiX, ty, 1); }
-        if (freezeTimer > 0) { ty += 24; drawLabelBox(g, "FREEZE " + (freezeTimer / 60 + 1) + "S", uiX, ty, 1); }
+        drawSmallLabelBox(g, "LV " + p.level + "  WAVE " + wave, uiX, ty);
+        if (rageTimer > 0) { ty += 24; drawSmallLabelBox(g, "RAGE " + (rageTimer / 60 + 1) + "S", uiX, ty); }
+        if (freezeTimer > 0) { ty += 24; drawSmallLabelBox(g, "FREEZE " + (freezeTimer / 60 + 1) + "S", uiX, ty); }
 
-        // Time + kills (top right)
         int secs = frameCount / 60;
         String time = String.format("TIME %02d:%02d", secs / 60, secs % 60);
         String kills = "KILLS: " + totalKills;
-        drawLabelBox(g, time, WIDTH - 10 - labelBoxWidth(time, 1), 10, 1);
-        drawLabelBox(g, kills, WIDTH - 10 - labelBoxWidth(kills, 1), 34, 1);
+        drawSmallLabelBox(g, time, WIDTH - 10 - (smallTextWidth(time) + 16), 10);
+        drawSmallLabelBox(g, kills, WIDTH - 10 - (smallTextWidth(kills) + 16), 34);
 
-        // Banners
         if (bannerTimer > 0) drawLabelBoxCentered(g, bannerText, HALF_W, 70, 3);
         if (toastTimer > 0) drawLabelBoxCentered(g, toastText, HALF_W, 125, 1);
 
@@ -1507,7 +1487,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
             g.drawRoundRect(x, HOTBAR_Y, SLOT, SLOT, 8, 8);
             g.setStroke(THIN);
 
-            drawCustomText(g, String.valueOf(i + 1), x + 4, HOTBAR_Y + 3, 1);
+            drawSmallCustomText(g, String.valueOf(i + 1), x + 4, HOTBAR_Y + 3);
             if (count > 0) {
                 g.setColor(it.color);
                 g.fillRoundRect(x + 9, HOTBAR_Y + 9, 26, 26, 8, 8);
@@ -1516,7 +1496,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
                 String letter = it.label.substring(0, 1);
                 g.drawString(letter, x + 22 - g.getFontMetrics().stringWidth(letter) / 2, HOTBAR_Y + 28);
                 String c = String.valueOf(count);
-                drawCustomText(g, c, x + SLOT - 4 - customTextWidth(c, 1), HOTBAR_Y + SLOT - 15, 1);
+                drawSmallCustomText(g, c, x + SLOT - 4 - smallTextWidth(c), HOTBAR_Y + SLOT - 15);
             }
         }
 
@@ -1536,7 +1516,6 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         }
     }
 
-    // --- Overlays ---
     private void drawPause(Graphics2D g) {
         g.setColor(OVERLAY);
         g.fillRect(0, 0, WIDTH, HEIGHT);
@@ -1564,7 +1543,6 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         }
         if (!bookOpen) return;
 
-        // Page hover highlight
         for (int i = 0; i < currentChoices.size(); i++) {
             int px = bookX + i * 200;
             if (mouseX >= px && mouseX < px + 200 && mouseY >= bookY && mouseY <= bookY + 300) {
@@ -1573,7 +1551,6 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
             }
         }
 
-        // Card text positions (tweak these 4 numbers if the pages of your book art sit differently)
         int nameY = bookY + 95, rarityY = bookY + 128, descY = bookY + 152, levelY = bookY + 235;
         for (int i = 0; i < currentChoices.size(); i++) {
             Card c = currentChoices.get(i);
@@ -1620,9 +1597,6 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         if (stateTimer > 45) drawCenteredString(g, "Click anywhere to return to the menu", HEIGHT - 60, Color.WHITE, 20);
     }
 
-    // =====================================================================
-    //  INPUT
-    // =====================================================================
     @Override
     public void mousePressed(MouseEvent e) {
         if (e.getButton() != MouseEvent.BUTTON1) return;
@@ -1723,9 +1697,6 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
 
     @Override public void keyTyped(KeyEvent e) {}
 
-    // =====================================================================
-    //  INNER CLASSES
-    // =====================================================================
     class Player {
         final HeroClass hero;
         double x = 0, y = 0;
@@ -1738,7 +1709,6 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         final int[] cardLevels = new int[CARDS.length];
         final int[] itemCounts = new int[ITEMS.length];
 
-        // Animation
         boolean facingRight = true;
         int animState = 0, animFrame = 0, animTimer = 0, attackAnimTimer = 0;
 
@@ -1765,7 +1735,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
             this.type = type;
             this.size = type.size;
             this.speed = type.speed;
-            this.hp = type.hp * (1 + 0.15 * (wave - 1));          // enemies get tougher every wave
+            this.hp = type.hp * (1 + 0.15 * (wave - 1));          
             this.damage = type.damage * (1 + 0.08 * (wave - 1));
         }
 
@@ -1874,14 +1844,13 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         Star(int x, int y, int type) { this.x = x; this.y = y; this.type = type; }
 
         void update() {
-            if (++tickCounter >= 10) { // ~6 FPS animation
+            if (++tickCounter >= 10) { 
                 tickCounter = 0;
-                if (++frameIndex >= 9) active = false; // 9 frames in the 3x3 sheet
+                if (++frameIndex >= 9) active = false; 
             }
         }
     }
 
-    /** Menu button: shows the pressed frame briefly, then runs its action. */
     class UIButton {
         final Rectangle bounds;
         final String label;
@@ -1913,8 +1882,13 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
             int cx = bounds.x + bounds.width / 2;
             if (sprite && buttonFrames[0] != null && buttonFrames[1] != null) {
                 g.drawImage(buttonFrames[pressed ? 1 : 0], bounds.x, bounds.y, bounds.width, bounds.height, null);
-                double frac = pressed ? 0.50 : 0.40; // where the button face sits inside the sprite
-                drawCustomTextCentered(g, label, cx, bounds.y + 20 + (int) (bounds.height * frac) - GLYPH_H, 1);
+                double frac = pressed ? 0.50 : 0.40; 
+                
+                if (label.equals("BACK")) {
+                    drawCustomTextCentered(g, label, cx, bounds.y + 35 + (int) (bounds.height * frac) - GLYPH_H, 1);
+                } else {
+                    drawCustomTextCentered(g, label, cx, bounds.y + 20 + (int) (bounds.height * frac) - GLYPH_H, 1);
+                }
             } else {
                 boolean hover = !pressed && bounds.contains(mouseX, mouseY);
                 g.setColor(pressed ? Color.GRAY : hover ? Color.WHITE : Color.LIGHT_GRAY);
