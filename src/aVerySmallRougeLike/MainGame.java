@@ -24,27 +24,24 @@ import java.util.Set;
 
 //DonSubb
 //Aditya Kaundinya
-//Oct 29 2026
+//Nov 3 2026
 
 //Todo
-//Add more enemy's                                   DONE (Bat, Slime, Skeleton, Ogre + wave unlocks)
-//Create spritesheet for all enemy's                 SKIPPED (needs art)
-//Add spritesheet into the code                      DONE (optional "Enemies.png" hook, falls back to circles)
-//Make UI for the main menu                          DONE
-//Make UI for the character select                   DONE
-//Make icons for each character and add them to the UI   DONE (built from the existing idle frames)
-//Change the in game layout(infnite play area)       DONE (camera follows the player, endless ground)
-//Add all new cards and effects(replace the old ones)    DONE (see Card enum)
-//Add Journal with all cards                         DONE (saved to journal.dat)
-//Add chest spawning                                 DONE
-//Add items for the chest                            DONE (see Item enum)
-//Add hotbar for items gained                        DONE (keys 1-9 or click a slot)
-//Add item effects                                   DONE
-//Change to click to shoot                           DONE (hold left mouse, aim with cursor)
-//Make Ui for other basic things                     DONE (pause menu, HUD, game over stats, hints)
+//Create spritesheet for all enemy's   
+//Create a white backround for the Title
+//Put buttons for many buttons
+//Make cards for the level up book
+//Input the chest for the chests found
+//Input the item icons
+//Make a hotbar
+//Make a character card for each character
+//Make cards for the journal
+//Add trees that can spawn
+//Add the chicken boss
 
 //To Fix
-//Green bar in the ui is to far to the left          
+//Green bar in the ui is to far to the left    
+//Size of font in many of the menus
 
 public class MainGame extends JPanel implements ActionListener, KeyListener, MouseListener, MouseMotionListener {
 
@@ -65,9 +62,9 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
     private static final double BTN_ASPECT = 250.0 / 300.0; // button height / width (same stretch you used before)
 
     // Custom text spritesheet (10 columns, 10x12 cells)
-    private static final String CHARSET = "ABCDEFGHIJKLMNOPQRST  VUWXYZ  1234567890.,:?!()+-=";
-    private static final int GLYPH_W = 10;
-    private static final int GLYPH_H = 12;
+    private static final String CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!?$";
+    private static final int GLYPH_W = 25;
+    private static final int GLYPH_H = 25;
     private static final int[] GLYPH_INDEX = new int[128];
     static {
         Arrays.fill(GLYPH_INDEX, -1);
@@ -1046,8 +1043,8 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
             char c = Character.toUpperCase(text.charAt(i));
             int idx = c < 128 ? GLYPH_INDEX[c] : -1;
             if (idx != -1) {
-                int sx = (idx % 10) * GLYPH_W;
-                int sy = (idx / 10) * GLYPH_H;
+                int sx = (idx % 6) * GLYPH_W;
+                int sy = (idx / 6) * GLYPH_H;
                 g.drawImage(textSheet, x, y, x + GLYPH_W * scale, y + GLYPH_H * scale,
                         sx, sy, sx + GLYPH_W, sy + GLYPH_H, null);
             }
@@ -1167,10 +1164,10 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
             g.drawImage(titleImg, HALF_W - imgW / 2, titleY - 260, imgW, imgH, null);
             
             // Draw the text directly on top of your new image without the white box
-            drawCustomTextCentered(g, "SIMPLE ROUGELIKE", HALF_W, titleY + 20, 3);
+            drawCustomTextCentered(g, "SIMPLE ROUGELIKE", HALF_W, titleY + 20, 2);
         } else {
             // Fallback if the image fails to load
-            drawLabelBoxCentered(g, "SIMPLE ROUGELIKE", HALF_W, titleY, 3);
+            drawLabelBoxCentered(g, "SIMPLE ROUGELIKE", HALF_W, titleY, 2);
         }
         for (UIButton b : menuButtons) b.draw(g);
 
@@ -1916,14 +1913,14 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
             if (sprite && buttonFrames[0] != null && buttonFrames[1] != null) {
                 g.drawImage(buttonFrames[pressed ? 1 : 0], bounds.x, bounds.y, bounds.width, bounds.height, null);
                 double frac = pressed ? 0.50 : 0.40; // where the button face sits inside the sprite
-                drawCustomTextCentered(g, label, cx, bounds.y + (int) (bounds.height * frac) - GLYPH_H, 2);
+                drawCustomTextCentered(g, label, cx, bounds.y + (int) (bounds.height * frac) - GLYPH_H, 1);
             } else {
                 boolean hover = !pressed && bounds.contains(mouseX, mouseY);
                 g.setColor(pressed ? Color.GRAY : hover ? Color.WHITE : Color.LIGHT_GRAY);
                 g.fillRoundRect(bounds.x, bounds.y, bounds.width, bounds.height, 10, 10);
                 g.setColor(BORDER);
                 g.drawRoundRect(bounds.x, bounds.y, bounds.width, bounds.height, 10, 10);
-                drawCustomTextCentered(g, label, cx, bounds.y + (bounds.height - GLYPH_H * 2) / 2 + (pressed ? 2 : 0), 2);
+                drawCustomTextCentered(g, label, cx, bounds.y + (bounds.height - GLYPH_H * 2) / 2 + (pressed ? 2 : 0), 1);
             }
         }
     }
