@@ -243,6 +243,10 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
     private BufferedImage smallTextSheet;
     private int smallGlyphW;
     private int smallGlyphH;
+    private BufferedImage verySmallTextSheet;
+    private static final int VERY_SMALL_GLYPH_W = 6;
+    private static final int VERY_SMALL_GLYPH_H = 6;
+    private BufferedImage cSelectImg;
     
     private final Map<HeroClass, BufferedImage[][]> heroSprites = new EnumMap<>(HeroClass.class);
     private BufferedImage[][] enemySprites;            
@@ -305,6 +309,9 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
             smallGlyphW = smallTextSheet.getWidth() / 6; 
             smallGlyphH = smallTextSheet.getHeight() / 7; 
         }
+        
+        verySmallTextSheet = loadImage("VerySmallText.png");
+        cSelectImg = loadImage("CSelect.png");
         
         bookFrames = flatten(loadSheet("Open_book.png", 4, 3, true));
 
@@ -384,11 +391,11 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         pauseButtons.add(new UIButton(px, py, bw, bh, "RESUME", true, () -> setState(GameState.PLAYING)));
         pauseButtons.add(new UIButton(px + bw + gap, py, bw, bh, "MENU", true, () -> setState(GameState.MENU)));
 
-        backButtons.add(new UIButton(15, 15, 110, 40, "BACK", true, () -> setState(GameState.MENU)));
+        backButtons.add(new UIButton(15, 0, 150, 100, "BACK", true, () -> setState(GameState.MENU)));
 
-        int cardW = 210, cardH = 340, cardGap = 30;
+        int cardW = 350, cardH = 340, cardGap = -80;
         int cx0 = (WIDTH - (HEROES.length * cardW + (HEROES.length - 1) * cardGap)) / 2;
-        for (int i = 0; i < HEROES.length; i++) heroCards[i] = new Rectangle(cx0 + i * (cardW + cardGap), 130, cardW, cardH);
+        for (int i = 0; i < HEROES.length; i++) heroCards[i] = new Rectangle(cx0 + i * (cardW + cardGap), 180, cardW, cardH);
     }
 
     private void setState(GameState s) {
@@ -1061,6 +1068,44 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         g.drawRoundRect(x, y, w, h, 8, 8);
         drawSmallCustomText(g, text, x + 8, y + 5);
     }
+    
+    private void drawVerySmallCustomText(Graphics2D g, String text, int x, int y) {
+        if (verySmallTextSheet == null) return;
+        for (int i = 0; i < text.length(); i++) {
+            char c = Character.toUpperCase(text.charAt(i));
+            int idx = c < 128 ? GLYPH_INDEX[c] : -1;
+            if (idx != -1) {
+                int sx = (idx % 6) * VERY_SMALL_GLYPH_W;
+                int sy = (idx / 6) * VERY_SMALL_GLYPH_H;
+                g.drawImage(verySmallTextSheet, x, y, x + VERY_SMALL_GLYPH_W, y + VERY_SMALL_GLYPH_H,
+                        sx, sy, sx + VERY_SMALL_GLYPH_W, sy + VERY_SMALL_GLYPH_H, null);
+            }
+            x += VERY_SMALL_GLYPH_W;
+        }
+    }
+
+    private int verySmallTextWidth(String text) {
+        return text.length() * VERY_SMALL_GLYPH_W;
+    }
+    
+    private int drawWrappedVerySmallCentered(Graphics2D g, String text, int cx, int y, int maxW, int lineH) {
+        StringBuilder line = new StringBuilder();
+        for (String word : text.split(" ")) {
+            String test = line.length() == 0 ? word : line + " " + word;
+            if (verySmallTextWidth(test) > maxW && line.length() > 0) {
+                drawVerySmallCustomText(g, line.toString(), cx - verySmallTextWidth(line.toString()) / 2, y);
+                y += lineH;
+                line = new StringBuilder(word);
+            } else {
+                line = new StringBuilder(test);
+            }
+        }
+        if (line.length() > 0) {
+            drawVerySmallCustomText(g, line.toString(), cx - verySmallTextWidth(line.toString()) / 2, y);
+            y += lineH;
+        }
+        return y;
+    }
 
     private void drawCenteredString(Graphics2D g, String text, int y, Color c, int size) {
         g.setColor(c);
@@ -1168,7 +1213,16 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
 
     private void drawCharSelect(Graphics2D g) {
         drawStars(g);
-        drawLabelBoxCentered(g, "SELECT YOUR CLASS", HALF_W, 25, 3);
+        
+        if (titleImg != null) {
+            int imgW = 800; 
+            int imgH = 80;  
+            g.drawImage(titleImg, HALF_W - imgW / 2, 75, imgW, imgH, null);
+            drawCustomTextCentered(g, "SELECT YOUR CLASS", HALF_W, 100, 1);
+        } else {
+            drawLabelBoxCentered(g, "SELECT YOUR CLASS", HALF_W, 25, 1);
+        }
+        
         for (UIButton b : backButtons) b.draw(g);
 
         for (int i = 0; i < HEROES.length; i++) {
@@ -1177,15 +1231,27 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
             boolean hover = r.contains(mouseX, mouseY);
             int cx = r.x + r.width / 2;
 
-            g.setColor(hover ? PANEL_HOVER : PANEL_FILL);
-            g.fillRoundRect(r.x, r.y, r.width, r.height, 16, 16);
-            g.setColor(hover ? h.color : BORDER);
-            g.setStroke(THICK);
-            g.drawRoundRect(r.x, r.y, r.width, r.height, 16, 16);
-            g.setStroke(THIN);
+            if (cSelectImg != null) {
+                g.drawImage(cSelectImg, r.x, r.y, r.width, r.height, null);
+                if (hover) {
+                    g.setColor(new Color(255, 255, 255, 40));
+                    g.fillRect(r.x, r.y, r.width, r.height);
+                    g.setColor(h.color);
+                    g.setStroke(THICK);
+                    g.drawRoundRect(r.x, r.y, r.width, r.height, 16, 16);
+                    g.setStroke(THIN);
+                }
+            } else {
+                g.setColor(hover ? PANEL_HOVER : PANEL_FILL);
+                g.fillRoundRect(r.x, r.y, r.width, r.height, 16, 16);
+                g.setColor(hover ? h.color : BORDER);
+                g.setStroke(THICK);
+                g.drawRoundRect(r.x, r.y, r.width, r.height, 16, 16);
+                g.setStroke(THIN);
+            }
 
             drawHeroIcon(g, h, cx - 56, r.y + 14, 112, hover ? uiTick / 6 : 0);
-            drawCustomTextCentered(g, h.label, cx, r.y + 140, 2);
+            drawCustomTextCentered(g, h.label, cx, r.y + 140, 1);
 
             String[] stats = {
                 "HP: " + (int) h.maxHp,
@@ -1194,11 +1260,11 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
                 "SPEED: " + String.format("%.1f", h.speed),
                 "ATK SPD: " + String.format("%.1f", 60.0 / h.cooldown)
             };
-            for (int s = 0; s < stats.length; s++) drawSmallCustomText(g, stats[s], r.x + 30, r.y + 172 + s * 16);
+            for (int s = 0; s < stats.length; s++) {
+                drawSmallCustomText(g, stats[s], r.x + 100, r.y + 172 + s * 16);
+            }
 
-            g.setFont(FONT_BODY);
-            g.setColor(TEXT_DARK);
-            drawWrappedCentered(g, h.description, cx, r.y + 270, r.width - 30, 15);
+            drawWrappedVerySmallCentered(g, h.description, cx, r.y + 270, r.width - 100, 10);
         }
     }
 
@@ -1235,21 +1301,32 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
 
             if (found) {
                 drawSmallCustomText(g, c.label, x + 10, y + 6);
-                g.setFont(FONT_BODY_BOLD);
-                g.setColor(c.rarity.color);
+                
                 String tag = c.rarity.name() + (c.maxLevel >= 99 ? "" : "  MAX LV " + c.maxLevel);
-                g.drawString(tag, x + panelW - 10 - g.getFontMetrics().stringWidth(tag), y + 17);
-                g.setFont(FONT_BODY);
-                g.setColor(TEXT_DARK);
-                g.drawString(c.description, x + 10, y + panelH - 8);
+                int tagWidth = verySmallTextWidth(tag);
+                drawVerySmallCustomText(g, tag, x + panelW - 10 - tagWidth, y + 8);
+                
+                drawVerySmallCustomText(g, c.description, x + 10, y + panelH - 12);
             } else {
                 drawSmallCustomText(g, "???", x + 10, y + 6);
-                g.setFont(FONT_BODY);
-                g.setColor(Color.DARK_GRAY);
-                g.drawString("Pick this card in a run to discover it.", x + 10, y + panelH - 8);
+                drawVerySmallCustomText(g, "PICK THIS CARD IN A RUN TO DISCOVER IT", x + 10, y + panelH - 12);
             }
         }
-        drawLabelBoxCentered(g, "DISCOVERED: " + discovered.size() + "/" + CARDS.length, HALF_W, HEIGHT - 38, 1);
+        
+        String discText = "DISCOVERED " + discovered.size() + " OF " + CARDS.length; 
+        
+        if (titleImg != null) {
+            int botImgW = 500; 
+            int botImgH = 60;
+            int botY = HEIGHT - 55;
+            
+            g.drawImage(titleImg, HALF_W - botImgW / 2, botY, botImgW, botImgH, null);
+            
+            int textW = smallTextWidth(discText);
+            drawSmallCustomText(g, discText, HALF_W - textW / 2, botY + 22);
+        } else {
+            drawSmallLabelBox(g, discText, HALF_W - smallTextWidth(discText) / 2 - 8, HEIGHT - 50);
+        }
     }
 
     private void drawWorld(Graphics2D g) {
@@ -1885,7 +1962,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
                 double frac = pressed ? 0.50 : 0.40; 
                 
                 if (label.equals("BACK")) {
-                    drawCustomTextCentered(g, label, cx, bounds.y + 35 + (int) (bounds.height * frac) - GLYPH_H, 1);
+                    drawCustomTextCentered(g, label, cx, bounds.y + 13 + (int) (bounds.height * frac) - GLYPH_H, 1);
                 } else {
                     drawCustomTextCentered(g, label, cx, bounds.y + 20 + (int) (bounds.height * frac) - GLYPH_H, 1);
                 }
