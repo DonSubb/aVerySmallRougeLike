@@ -1620,39 +1620,64 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         }
         if (!bookOpen) return;
 
-        for (int i = 0; i < currentChoices.size(); i++) {
-            int px = bookX + i * 200;
-            if (mouseX >= px && mouseX < px + 200 && mouseY >= bookY && mouseY <= bookY + 300) {
-                g.setColor(new Color(255, 255, 255, 50));
-                g.fillRect(px + 10, bookY + 10, 180, 280);
-            }
-        }
+        // Set up the CSelect card dimensions
+        int cardW = 160;
+        int cardH = 240;
+        int cardY = bookY + 60;
 
-        int nameY = bookY + 95, rarityY = bookY + 128, descY = bookY + 152, levelY = bookY + 235;
         for (int i = 0; i < currentChoices.size(); i++) {
             Card c = currentChoices.get(i);
-            int cx = bookX + (i == 0 ? 110 : 310);
+            int cx = bookX + (i == 0 ? 100 : 300); // Center of left or right page
+            int cardX = cx - cardW / 2;
+            
+            boolean hover = mouseX >= cardX && mouseX < cardX + cardW && mouseY >= cardY && mouseY <= cardY + cardH;
 
-            drawCustomTextCentered(g, c.label, cx, nameY, 1);
+            // Draw CSelect background and hover effects[cite: 1]
+            if (cSelectImg != null) {
+                g.drawImage(cSelectImg, cardX, cardY, cardW, cardH, null);
+                if (hover) {
+                    g.setColor(new Color(255, 255, 255, 40));
+                    g.fillRect(cardX, cardY, cardW, cardH);
+                    g.setColor(c.rarity.color);
+                    g.setStroke(THICK);
+                    g.drawRoundRect(cardX, cardY, cardW, cardH, 16, 16);
+                    g.setStroke(THIN);
+                }
+            } else {
+                g.setColor(hover ? PANEL_HOVER : PANEL_FILL);
+                g.fillRoundRect(cardX, cardY, cardW, cardH, 16, 16);
+                g.setColor(hover ? c.rarity.color : BORDER);
+                g.setStroke(THICK);
+                g.drawRoundRect(cardX, cardY, cardW, cardH, 16, 16);
+                g.setStroke(THIN);
+            }
 
-            g.setFont(FONT_BODY_BOLD);
-            g.setColor(c.rarity.color);
+            // Draw Card Name (Small Text)
+            int nameY = cardY + 30;
+            int nameW = smallTextWidth(c.label);
+            drawSmallCustomText(g, c.label, cx - nameW / 2, nameY);
+
+            // Draw Rarity (Very Small Text)
+            int rarityY = cardY + 55;
             String rar = c.rarity.name();
-            g.drawString(rar, cx - g.getFontMetrics().stringWidth(rar) / 2, rarityY);
+            int rarW = verySmallTextWidth(rar);
+            drawVerySmallCustomText(g, rar, cx - rarW / 2, rarityY);
 
-            g.setFont(FONT_BODY);
-            g.setColor(TEXT_DARK);
-            drawWrappedCentered(g, c.description, cx, descY, 140, 15);
+            // Draw Description (Wrapped Very Small Text)
+            int descY = cardY + 90;
+            drawWrappedVerySmallCentered(g, c.description, cx, descY, cardW - 30, 10);
 
+            // Draw Level (Small Text)
+            int levelY = cardY + 200;
             int next = player.cardLevels[c.ordinal()] + 1;
-            String lvl = next == 1 ? "New!" : "Level " + next;
-            g.setFont(FONT_BODY_BOLD);
-            g.drawString(lvl, cx - g.getFontMetrics().stringWidth(lvl) / 2, levelY);
+            String lvl = next == 1 ? "NEW!" : "LEVEL " + next;
+            int lvlW = smallTextWidth(lvl);
+            drawSmallCustomText(g, lvl, cx - lvlW / 2, levelY);
         }
 
         g.setFont(FONT_BODY);
         g.setColor(Color.LIGHT_GRAY);
-        String hint = "Click a page or press 1 / 2";
+        String hint = "Click a card or press 1 / 2";
         g.drawString(hint, HALF_W - g.getFontMetrics().stringWidth(hint) / 2, bookY + 335);
     }
 
@@ -1704,6 +1729,9 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
                 if (bookOpen) {
                     int bookX = HALF_W - 200;
                     int bookY = HALF_H - 150;
+                    int cardW = 160, cardH = 240, cardY = bookY + 30;
+                    int c0X = (bookX + 100) - cardW / 2;
+                    int c1X = (bookX + 300) - cardW / 2;
                     if (my >= bookY && my <= bookY + 300) {
                         if (mx >= bookX && mx < bookX + 200) chooseCard(0);
                         else if (mx >= bookX + 200 && mx <= bookX + 400) chooseCard(1);
