@@ -53,8 +53,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
     }
 
     private static final int SLOT = 44;
-    private static final int SLOT_GAP = 6;
-    private static final int HOTBAR_Y = HEIGHT - 56;
+    private static final int SLOT_GAP = -1;
 
     private static final HeroClass[] HEROES = HeroClass.values();
     private static final EnemyType[] ENEMY_TYPES = EnemyType.values();
@@ -252,6 +251,16 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
     private BufferedImage[][] enemySprites;            
     private final BufferedImage[][] starSprites = new BufferedImage[5][];
     private final BufferedImage[] buttonFrames = new BufferedImage[2];
+    
+    private BufferedImage[] chest1Frames;
+    private BufferedImage[] chest2Frames;
+    private BufferedImage actionPanelImg;
+    
+    // Customize your hotbar here!
+    private double hotbarScale = 2.5;       // Change this to make it bigger or smaller
+    private int hotbarBottomMargin = - 40;    // Distance from the bottom of the screen
+    private int hotbarXOffset = 0;          // Shift left (negative) or right (positive) from the center
+    
     private final BufferedImage groundTile = createGroundTile();
     private final Ellipse2D portraitClip = new Ellipse2D.Float(20, 20, 55, 55);
 
@@ -328,6 +337,9 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         }
 
         if (new File("Enemies.png").exists()) enemySprites = loadSheet("Enemies.png", 4, ENEMY_TYPES.length, true);
+        if (new File("Chest1_D.png").exists()) chest1Frames = flatten(loadSheet("Chest1_D.png", 4, 1, false));
+        if (new File("Chest2_D.png").exists()) chest2Frames = flatten(loadSheet("Chest2_D.png", 4, 1, false));
+        if (new File("Action_panel.png").exists()) actionPanelImg = loadImage("Action_panel.png");
     }
 
     private BufferedImage loadImage(String file) {
@@ -688,12 +700,29 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         Player p = player;
         for (int i = chests.size() - 1; i >= 0; i--) {
             Chest c = chests.get(i);
-            double d2 = distSq(c.x, c.y, p.x, p.y);
-            if (d2 < 30 * 30) {
-                chests.remove(i);
-                openChest(c);
-            } else if (d2 > 1600.0 * 1600.0) {
-                chests.remove(i);
+            
+            if (c.opening) {
+                c.animTimer++;
+                if (c.animTimer > 8) { 
+                    c.animTimer = 0;
+                    c.frame++;
+                    
+                    if (c.frame == 2 && !c.itemGiven) {
+                        openChest(c);
+                        c.itemGiven = true;
+                    }
+                    
+                    if (c.frame >= 4) {
+                        chests.remove(i);
+                    }
+                }
+            } else {
+                double d2 = distSq(c.x, c.y, p.x, p.y);
+                if (d2 < 30 * 30) {
+                    c.opening = true; 
+                } else if (d2 > 1600.0 * 1600.0) {
+                    chests.remove(i);
+                }
             }
         }
     }
@@ -931,7 +960,8 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
     private void spawnChest() {
         double a = random.nextDouble() * Math.PI * 2;
         double r = 350 + random.nextDouble() * 300;
-        chests.add(new Chest(player.x + Math.cos(a) * r, player.y + Math.sin(a) * r));
+        int type = random.nextInt(2); 
+        chests.add(new Chest(player.x + Math.cos(a) * r, player.y + Math.sin(a) * r, type));
     }
 
     private int nextChestDelay() {
@@ -1434,17 +1464,18 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
     }
 
     private void drawChest(Graphics2D g, Chest c) {
-        int x = (int) c.x, y = (int) c.y;
-        g.setColor(SHADOW);
-        g.fillOval(x - 16, y + 6, 32, 8);
-        g.setColor(new Color(120, 75, 35));
-        g.fillRoundRect(x - 14, y - 10, 28, 20, 6, 6);
-        g.setColor(new Color(90, 55, 25));
-        g.fillRoundRect(x - 14, y - 14, 28, 9, 8, 8);
-        g.setColor(new Color(240, 200, 60));
-        g.fillRect(x - 3, y - 14, 6, 24);
-        g.setColor(BORDER);
-        g.drawRoundRect(x - 14, y - 14, 28, 24, 6, 6);
+        BufferedImage[] frames = (c.type == 0) ? chest1Frames : chest2Frames;
+        
+        if (frames != null && c.frame < frames.length && frames[c.frame] != null) {
+            BufferedImage img = frames[c.frame];
+            int w = img.getWidth() * 2; 
+            int h = img.getHeight() * 2;
+            g.drawImage(img, (int)c.x - w / 2, (int)c.y - h / 2 + 10, w, h, null);
+        } else {
+            int x = (int) c.x, y = (int) c.y;
+            g.setColor(c.type == 0 ? new Color(120, 75, 35) : new Color(150, 90, 45));
+            g.fillRoundRect(x - 14, y - 10, 28, 20, 6, 6);
+        }
     }
 
     private void drawChestArrows(Graphics2D g) {
@@ -1536,47 +1567,117 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         drawHotbar(g);
     }
 
-    private int hotbarX() {
-        return (WIDTH - (ITEMS.length * SLOT + (ITEMS.length - 1) * SLOT_GAP)) / 2;
+    private int getHotbarY() {
+        if (actionPanelImg != null) {
+            return HEIGHT - (int)(actionPanelImg.getHeight() * hotbarScale) - hotbarBottomMargin;
+        }
+        return HEIGHT - 56; // Fallback
+    }
+
+    private int getHotbarX() {
+        if (actionPanelImg != null) {
+            return (WIDTH - (int)(actionPanelImg.getWidth() * hotbarScale)) / 2 + hotbarXOffset;
+        }
+        return (WIDTH - (ITEMS.length * SLOT + (ITEMS.length - 1) * SLOT_GAP)) / 2; // Fallback
     }
 
     private int hotbarSlotAt(int mx, int my) {
-        if (my < HOTBAR_Y || my > HOTBAR_Y + SLOT) return -1;
-        int rel = mx - hotbarX();
-        if (rel < 0) return -1;
-        int i = rel / (SLOT + SLOT_GAP);
-        if (i >= ITEMS.length || rel % (SLOT + SLOT_GAP) > SLOT) return -1;
-        return i;
+        int hy = getHotbarY();
+        int hx = getHotbarX();
+        
+        if (actionPanelImg != null) {
+            int scaledW = (int)(actionPanelImg.getWidth() * hotbarScale);
+            int scaledH = (int)(actionPanelImg.getHeight() * hotbarScale);
+            if (my < hy || my > hy + scaledH || mx < hx || mx > hx + scaledW) return -1;
+            
+            // Assume the panel is divided evenly into 9 slots
+            double slotW = (double) scaledW / 9.0;
+            int slot = (int)((mx - hx) / slotW);
+            if (slot >= 0 && slot < ITEMS.length) return slot;
+            return -1;
+        } else {
+            if (my < hy || my > hy + SLOT) return -1;
+            int rel = mx - hx;
+            if (rel < 0) return -1;
+            int i = rel / (SLOT + SLOT_GAP);
+            if (i >= ITEMS.length || rel % (SLOT + SLOT_GAP) > SLOT) return -1;
+            return i;
+        }
     }
 
     private void drawHotbar(Graphics2D g) {
-        int x0 = hotbarX();
+        int hx = getHotbarX();
+        int hy = getHotbarY();
         int hover = hotbarSlotAt(mouseX, mouseY);
-        for (int i = 0; i < ITEMS.length; i++) {
-            Item it = ITEMS[i];
-            int count = player.itemCounts[i];
-            int x = x0 + i * (SLOT + SLOT_GAP);
+        
+        if (actionPanelImg != null) {
+            int scaledW = (int)(actionPanelImg.getWidth() * hotbarScale);
+            int scaledH = (int)(actionPanelImg.getHeight() * hotbarScale);
+            g.drawImage(actionPanelImg, hx, hy, scaledW, scaledH, null);
+            
+            double slotW = (double) scaledW / 9.0;
+            
+            for (int i = 0; i < ITEMS.length; i++) {
+                Item it = ITEMS[i];
+                int count = player.itemCounts[i];
+                int slotX = hx + (int)(i * slotW) + 10;
+                int slotCX = slotX + (int)(slotW / 2);
+                int slotCY = hy + scaledH / 2;
+                
+                // Highlight hovered slot
+                if (i == hover) {
+                    g.setColor(new Color(255, 200, 0, 80));
+                    g.fillRect(slotX, hy + 40, (int)slotW - 8, scaledH - 80);
+                }
+                
+                // Draw slot number
+                drawSmallCustomText(g, String.valueOf(i + 1), slotX + 6, hy + 6);
+                
+                if (count > 0) {
+                    // Scale items to fit the slot size
+                    int iconSize = (int)(24 * (hotbarScale / 2.0)); 
+                    g.setColor(it.color);
+                    g.fillRoundRect(slotCX - iconSize/2, slotCY - iconSize/2, iconSize, iconSize, 8, 8);
+                    
+                    g.setFont(getBoldFont(Math.max(12, (int)(16 * hotbarScale / 2.5))));
+                    g.setColor(Color.WHITE);
+                    String letter = it.label.substring(0, 1);
+                    g.drawString(letter, slotCX - g.getFontMetrics().stringWidth(letter) / 2, slotCY + g.getFontMetrics().getAscent()/2 - 2);
+                    
+                    // Draw count
+                    String cStr = String.valueOf(count);
+                    drawSmallCustomText(g, cStr, slotX + (int)slotW - smallTextWidth(cStr) - 6, hy + scaledH - 14);
+                }
+            }
+        } else {
+            // Original fallback rendering
+            for (int i = 0; i < ITEMS.length; i++) {
+                Item it = ITEMS[i];
+                int count = player.itemCounts[i];
+                int x = hx + i * (SLOT + SLOT_GAP);
 
-            g.setColor(SLOT_FILL);
-            g.fillRoundRect(x, HOTBAR_Y, SLOT, SLOT, 8, 8);
-            g.setColor(i == hover ? Color.ORANGE : (it.consumable ? BORDER : new Color(190, 150, 40)));
-            g.setStroke(i == hover ? THICK : THIN);
-            g.drawRoundRect(x, HOTBAR_Y, SLOT, SLOT, 8, 8);
-            g.setStroke(THIN);
+                g.setColor(SLOT_FILL);
+                g.fillRoundRect(x, hy, SLOT, SLOT, 8, 8);
+                g.setColor(i == hover ? Color.ORANGE : (it.consumable ? BORDER : new Color(190, 150, 40)));
+                g.setStroke(i == hover ? THICK : THIN);
+                g.drawRoundRect(x, hy, SLOT, SLOT, 8, 8);
+                g.setStroke(THIN);
 
-            drawSmallCustomText(g, String.valueOf(i + 1), x + 4, HOTBAR_Y + 3);
-            if (count > 0) {
-                g.setColor(it.color);
-                g.fillRoundRect(x + 9, HOTBAR_Y + 9, 26, 26, 8, 8);
-                g.setFont(getBoldFont(16));
-                g.setColor(Color.WHITE);
-                String letter = it.label.substring(0, 1);
-                g.drawString(letter, x + 22 - g.getFontMetrics().stringWidth(letter) / 2, HOTBAR_Y + 28);
-                String c = String.valueOf(count);
-                drawSmallCustomText(g, c, x + SLOT - 4 - smallTextWidth(c), HOTBAR_Y + SLOT - 15);
+                drawSmallCustomText(g, String.valueOf(i + 1), x + 4, hy + 3);
+                if (count > 0) {
+                    g.setColor(it.color);
+                    g.fillRoundRect(x + 9, hy + 9, 26, 26, 8, 8);
+                    g.setFont(getBoldFont(16));
+                    g.setColor(Color.WHITE);
+                    String letter = it.label.substring(0, 1);
+                    g.drawString(letter, x + 22 - g.getFontMetrics().stringWidth(letter) / 2, hy + 28);
+                    String c = String.valueOf(count);
+                    drawSmallCustomText(g, c, x + SLOT - 4 - smallTextWidth(c), hy + SLOT - 15);
+                }
             }
         }
 
+        // Draw tooltip if hovering over an item you own
         if (hover >= 0 && player.itemCounts[hover] > 0) {
             Item it = ITEMS[hover];
             String tip = it.label + ": " + it.description;
@@ -1585,11 +1686,11 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
             int w = fm.stringWidth(tip) + 16;
             int x = Math.max(5, Math.min(WIDTH - w - 5, mouseX - w / 2));
             g.setColor(PANEL_FILL);
-            g.fillRoundRect(x, HOTBAR_Y - 30, w, 22, 8, 8);
+            g.fillRoundRect(x, hy - 30, w, 22, 8, 8);
             g.setColor(BORDER);
-            g.drawRoundRect(x, HOTBAR_Y - 30, w, 22, 8, 8);
+            g.drawRoundRect(x, hy - 30, w, 22, 8, 8);
             g.setColor(TEXT_DARK);
-            g.drawString(tip, x + 8, HOTBAR_Y - 15);
+            g.drawString(tip, x + 8, hy - 15);
         }
     }
 
@@ -1609,11 +1710,11 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         g.fillRect(0, 0, WIDTH, HEIGHT);
         drawCenteredString(g, "LEVEL UP!", 100, Color.YELLOW, 40);
 
-        int bookX = HALF_W - 200;
-        int bookY = HALF_H - 150;
+        int bookX = HALF_W - 325 ;
+        int bookY = HALF_H - 340;
         BufferedImage frame = bookFrames != null ? bookFrames[currentBookFrame] : null;
         if (frame != null) {
-            g.drawImage(frame, bookX, bookY, 400, 300, null);
+            g.drawImage(frame, bookX, bookY, 600, 500, null);
         } else {
             g.setColor(Color.GRAY);
             g.fillRect(bookX, bookY, 400, 300);
@@ -1621,18 +1722,18 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         if (!bookOpen) return;
 
         // Set up the CSelect card dimensions
-        int cardW = 160;
-        int cardH = 240;
-        int cardY = bookY + 60;
+        int cardW = 260;
+        int cardH = 300;
+        int cardY = bookY + 160;
 
         for (int i = 0; i < currentChoices.size(); i++) {
             Card c = currentChoices.get(i);
-            int cx = bookX + (i == 0 ? 100 : 300); // Center of left or right page
+            int cx = bookX + (i == 0 ? 150 : 450); // Center of left or right page
             int cardX = cx - cardW / 2;
             
             boolean hover = mouseX >= cardX && mouseX < cardX + cardW && mouseY >= cardY && mouseY <= cardY + cardH;
 
-            // Draw CSelect background and hover effects[cite: 1]
+            // Draw CSelect background and hover effects
             if (cSelectImg != null) {
                 g.drawImage(cSelectImg, cardX, cardY, cardW, cardH, null);
                 if (hover) {
@@ -1678,7 +1779,7 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
         g.setFont(FONT_BODY);
         g.setColor(Color.LIGHT_GRAY);
         String hint = "Click a card or press 1 / 2";
-        g.drawString(hint, HALF_W - g.getFontMetrics().stringWidth(hint) / 2, bookY + 335);
+        g.drawString(hint, HALF_W - g.getFontMetrics().stringWidth(hint) / 2, bookY + 550);
     }
 
     private void drawGameOver(Graphics2D g) {
@@ -1922,7 +2023,17 @@ public class MainGame extends JPanel implements ActionListener, KeyListener, Mou
 
     class Chest {
         final double x, y;
-        Chest(double x, double y) { this.x = x; this.y = y; }
+        final int type;
+        boolean opening = false;
+        boolean itemGiven = false;
+        int frame = 0;
+        int animTimer = 0;
+
+        Chest(double x, double y, int type) { 
+            this.x = x; 
+            this.y = y; 
+            this.type = type; 
+        }
     }
 
     class Ring {
